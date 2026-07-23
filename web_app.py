@@ -9,42 +9,44 @@ st.set_page_config(page_title="Asisten SK KPU Kubu Raya", page_icon="📄", layo
 st.title("📄 Asisten Pencari & Tanya Jawab SK")
 st.write("Analisis dokumen SK JDIH KPU Kubu Raya secara instan.")
 
-uploaded_files = st.file_uploader("Upload dokumen PDF SK di sini:", type=["pdf"], accept_multiple_files=True)
-
 full_text = ""
 
+# 1. Otomatis baca dari folder lokal "folder_sk" jika ada
+pdf_folder = "./folder_sk"
+if os.path.exists(pdf_folder):
+    for file in os.listdir(pdf_folder):
+        if file.endswith(".pdf"):
+            reader = PdfReader(os.path.join(pdf_folder, file))
+            for i, page in enumerate(reader.pages):
+                extracted = page.extract_text()
+                if extracted:
+                    full_text += f"\n--- [{file} - Hal {i+1}] ---\n" + extracted
+
+# 2. Opsional: Tambahan uploader jika ingin tambah file baru lewat web
+uploaded_files = st.file_uploader("Atau upload dokumen PDF tambahan di sini (Opsional):", type=["pdf"], accept_multiple_files=True)
 if uploaded_files:
     for uploaded_file in uploaded_files:
         reader = PdfReader(uploaded_file)
-        for page in reader.pages:
+        for i, page in enumerate(reader.pages):
             extracted = page.extract_text()
             if extracted:
-                full_text += extracted + "\n"
-    st.success(f"✅ Berhasil memuat {len(uploaded_files)} dokumen PDF!")
-else:
-    pdf_folder = "./folder_sk"
-    if os.path.exists(pdf_folder):
-        for file in os.listdir(pdf_folder):
-            if file.endswith(".pdf"):
-                reader = PdfReader(os.path.join(pdf_folder, file))
-                for page in reader.pages:
-                    extracted = page.extract_text()
-                    if extracted:
-                        full_text += extracted + "\n"
+                full_text += f"\n--- [{uploaded_file.name} - Hal {i+1}] ---\n" + extracted
 
 if not full_text:
-    st.warning("⚠️ Silakan upload file PDF SK terlebih dahulu melalui tombol di atas.")
+    st.warning("⚠️ Belum ada file PDF SK di dalam folder server maupun yang di-upload.")
+else:
+    st.success("✅ Dokumen SK berhasil dimuat dan siap dianalisis oleh AI!")
 
 query = st.text_input("Tulis pertanyaan tentang SK Anda di sini (Contoh: rekap PDPB TW III 2025):")
 
 if query and full_text:
-    with st.spinner("AI sedang menganalisis dokumen..."):
-        # Batasi konteks maksimal 15.000 karakter agar tidak overload/error API Status
-        context = full_text[:15000]
+    with st.spinner("AI sedang membaca dan menganalisis seluruh isi SK..."):
+        context = full_text[:100000]
         
-        prompt = f"""Jawab pertanyaan berikut secara akurat berdasarkan ringkasan isi dokumen SK di bawah ini.
+        prompt = f"""Anda adalah asisten ahli analisis dokumen Surat Keputusan (SK) KPU. 
+Baca seluruh isi teks dokumen SK di bawah ini dengan sangat teliti, lalu jawab pertanyaan pengguna secara rinci, akurat, dan sebutkan data atau angka aslinya jika ada di dalam dokumen.
 
-Dokumen SK:
+Isi Dokumen SK:
 {context}
 
 Pertanyaan: {query}
