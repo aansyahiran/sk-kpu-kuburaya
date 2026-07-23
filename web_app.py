@@ -3,16 +3,27 @@ import streamlit as st
 from pypdf import PdfReader
 from groq import Groq
 
-# Mengambil API Key secara aman dari Secrets Streamlit Cloud
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
 st.set_page_config(page_title="Asisten SK KPU Kubu Raya", page_icon="📄", layout="centered")
 st.title("📄 Asisten Pencari & Tanya Jawab SK")
 st.write("Analisis dokumen SK JDIH KPU Kubu Raya secara instan.")
 
-@st.cache_data
-def load_all_pdfs():
-    text_data = ""
+# Fitur Upload PDF langsung dari web
+uploaded_files = st.file_uploader("Upload dokumen PDF SK di sini:", type=["pdf"], accept_multiple_files=True)
+
+full_text = ""
+
+if uploaded_files:
+    for uploaded_file in uploaded_files:
+        reader = PdfReader(uploaded_file)
+        for page in reader.pages:
+            extracted = page.extract_text()
+            if extracted:
+                full_text += extracted + "\n"
+    st.success(f"✅ Berhasil memuat {len(uploaded_files)} dokumen PDF!")
+else:
+    # Cek folder lokal jika ada
     pdf_folder = "./folder_sk"
     if os.path.exists(pdf_folder):
         for file in os.listdir(pdf_folder):
@@ -21,16 +32,10 @@ def load_all_pdfs():
                 for page in reader.pages:
                     extracted = page.extract_text()
                     if extracted:
-                        text_data += extracted + "\n"
-    return text_data
-
-with st.spinner("Memuat dokumen SK..."):
-    full_text = load_all_pdfs()
+                        full_text += extracted + "\n"
 
 if not full_text:
-    st.warning("⚠️ Belum ada file PDF SK di dalam folder proyek.")
-else:
-    st.success("✅ Dokumen SK Berhasil Dimuat dan Siap Dianalisis!")
+    st.warning("⚠️ Silakan upload file PDF SK terlebih dahulu melalui tombol di atas.")
 
 query = st.text_input("Tulis pertanyaan tentang SK Anda di sini (Contoh: rekap PDPB TW III 2025):")
 
