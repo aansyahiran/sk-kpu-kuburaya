@@ -9,7 +9,6 @@ st.set_page_config(page_title="Asisten SK KPU Kubu Raya", page_icon="📄", layo
 st.title("📄 Asisten Pencari & Tanya Jawab SK")
 st.write("Analisis dokumen SK JDIH KPU Kubu Raya secara instan.")
 
-# Fitur Upload PDF langsung dari web
 uploaded_files = st.file_uploader("Upload dokumen PDF SK di sini:", type=["pdf"], accept_multiple_files=True)
 
 full_text = ""
@@ -23,7 +22,6 @@ if uploaded_files:
                 full_text += extracted + "\n"
     st.success(f"✅ Berhasil memuat {len(uploaded_files)} dokumen PDF!")
 else:
-    # Cek folder lokal jika ada
     pdf_folder = "./folder_sk"
     if os.path.exists(pdf_folder):
         for file in os.listdir(pdf_folder):
@@ -41,9 +39,10 @@ query = st.text_input("Tulis pertanyaan tentang SK Anda di sini (Contoh: rekap P
 
 if query and full_text:
     with st.spinner("AI sedang menganalisis dokumen..."):
-        context = full_text[:150000]
+        # Batasi konteks maksimal 15.000 karakter agar tidak overload/error API Status
+        context = full_text[:15000]
         
-        prompt = f"""Jawab pertanyaan berikut secara akurat berdasarkan isi dokumen SK yang diberikan di bawah ini.
+        prompt = f"""Jawab pertanyaan berikut secara akurat berdasarkan ringkasan isi dokumen SK di bawah ini.
 
 Dokumen SK:
 {context}
