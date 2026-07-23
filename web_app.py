@@ -11,42 +11,30 @@ st.write("Analisis dokumen SK JDIH KPU Kubu Raya secara instan.")
 
 full_text = ""
 
-# 1. Cek folder lokal
-pdf_folder = "./folder_sk"
-if os.path.exists(pdf_folder):
-    for file in os.listdir(pdf_folder):
-        if file.endswith(".pdf"):
-            reader = PdfReader(os.path.join(pdf_folder, file))
-            for i, page in enumerate(reader.pages):
-                extracted = page.extract_text()
-                if extracted:
-                    full_text += f"\n--- [{file} - Hal {i+1}] ---\n" + extracted
-
-# 2. Opsional: Tambahan uploader web
-uploaded_files = st.file_uploader("Atau upload dokumen PDF tambahan di sini:", type=["pdf"], accept_multiple_files=True)
+uploaded_files = st.file_uploader("Upload dokumen PDF SK di sini:", type=["pdf"], accept_multiple_files=True)
 if uploaded_files:
     for uploaded_file in uploaded_files:
         reader = PdfReader(uploaded_file)
-        for i, page in enumerate(reader.pages):
+        for page in reader.pages:
             extracted = page.extract_text()
             if extracted:
-                full_text += f"\n--- [{uploaded_file.name} - Hal {i+1}] ---\n" + extracted
+                full_text += extracted + "\n"
 
 if not full_text.strip():
-    st.warning("⚠️ Belum ada teks dokumen SK yang terbaca. Silakan upload file PDF melalui tombol di atas terlebih dahulu.")
+    st.warning("⚠️ Silakan upload file PDF SK terlebih dahulu melalui tombol di atas.")
 else:
-    st.success("✅ Dokumen SK berhasil dimuat dan siap dianalisis oleh AI!")
+    st.success("✅ Dokumen SK berhasil dimuat!")
 
 query = st.text_input("Tulis pertanyaan tentang SK Anda di sini (Contoh: rekap PDPB TW III 2025):")
 
 if query and full_text.strip():
-    with st.spinner("AI sedang membaca dan menganalisis seluruh isi SK..."):
-        context = full_text[:80000]
+    with st.spinner("AI sedang menganalisis dokumen..."):
+        # Pangkas teks secara ketat maksimal 2.500 karakter agar aman dari limit gratis TPM Groq
+        context = full_text[:2500]
         
-        prompt = f"""Anda adalah asisten ahli analisis dokumen Surat Keputusan (SK) KPU. 
-Baca seluruh isi teks dokumen SK di bawah ini dengan sangat teliti, lalu jawab pertanyaan pengguna secara rinci dan akurat berdasarkan data yang ada.
+        prompt = f"""Jawab pertanyaan berikut secara akurat berdasarkan ringkasan dokumen SK ini:
 
-Isi Dokumen SK:
+Dokumen SK:
 {context}
 
 Pertanyaan: {query}
