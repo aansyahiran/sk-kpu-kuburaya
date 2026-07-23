@@ -11,7 +11,7 @@ st.write("Analisis dokumen SK JDIH KPU Kubu Raya secara instan.")
 
 full_text = ""
 
-# 1. Otomatis baca dari folder lokal "folder_sk" jika ada
+# 1. Cek folder lokal
 pdf_folder = "./folder_sk"
 if os.path.exists(pdf_folder):
     for file in os.listdir(pdf_folder):
@@ -22,8 +22,8 @@ if os.path.exists(pdf_folder):
                 if extracted:
                     full_text += f"\n--- [{file} - Hal {i+1}] ---\n" + extracted
 
-# 2. Opsional: Tambahan uploader jika ingin tambah file baru lewat web
-uploaded_files = st.file_uploader("Atau upload dokumen PDF tambahan di sini (Opsional):", type=["pdf"], accept_multiple_files=True)
+# 2. Opsional: Tambahan uploader web
+uploaded_files = st.file_uploader("Atau upload dokumen PDF tambahan di sini:", type=["pdf"], accept_multiple_files=True)
 if uploaded_files:
     for uploaded_file in uploaded_files:
         reader = PdfReader(uploaded_file)
@@ -32,19 +32,19 @@ if uploaded_files:
             if extracted:
                 full_text += f"\n--- [{uploaded_file.name} - Hal {i+1}] ---\n" + extracted
 
-if not full_text:
-    st.warning("⚠️ Belum ada file PDF SK di dalam folder server maupun yang di-upload.")
+if not full_text.strip():
+    st.warning("⚠️ Belum ada teks dokumen SK yang terbaca. Silakan upload file PDF melalui tombol di atas terlebih dahulu.")
 else:
     st.success("✅ Dokumen SK berhasil dimuat dan siap dianalisis oleh AI!")
 
 query = st.text_input("Tulis pertanyaan tentang SK Anda di sini (Contoh: rekap PDPB TW III 2025):")
 
-if query and full_text:
+if query and full_text.strip():
     with st.spinner("AI sedang membaca dan menganalisis seluruh isi SK..."):
-        context = full_text[:100000]
+        context = full_text[:80000]
         
         prompt = f"""Anda adalah asisten ahli analisis dokumen Surat Keputusan (SK) KPU. 
-Baca seluruh isi teks dokumen SK di bawah ini dengan sangat teliti, lalu jawab pertanyaan pengguna secara rinci, akurat, dan sebutkan data atau angka aslinya jika ada di dalam dokumen.
+Baca seluruh isi teks dokumen SK di bawah ini dengan sangat teliti, lalu jawab pertanyaan pengguna secara rinci dan akurat berdasarkan data yang ada.
 
 Isi Dokumen SK:
 {context}
@@ -52,12 +52,14 @@ Isi Dokumen SK:
 Pertanyaan: {query}
 """
 
-        completion = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.1
-        )
-        answer = completion.choices[0].message.content
-
-    st.markdown("### 🤖 Jawaban AI:")
-    st.write(answer)
+        try:
+            completion = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.1
+            )
+            answer = completion.choices[0].message.content
+            st.markdown("### 🤖 Jawaban AI:")
+            st.write(answer)
+        except Exception as e:
+            st.error(f"Terjadi kesalahan pada koneksi AI: {e}")
